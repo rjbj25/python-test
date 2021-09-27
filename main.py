@@ -44,15 +44,18 @@ def customer_transform(data):
   customers['due_balance'] = data['deuda']
   customers['address'] = data['direccion']
   customers['ocupation'] = data['ocupacion']
-  customers['best_contact_ocupation'] = customers['ocupation'].apply(lambda x:get_best_contact_ocupation(x,customers[customers['ocupation']==x]))
+  ocupations = pd.DataFrame(data['ocupacion'].drop_duplicates()).reset_index().drop('index', axis=1)
+  print(ocupations['ocupacion'])
+  print(data['ocupacion'])
+  ocupations['best_contact_ocupation_fiscal_id'] = ocupations['ocupacion'].apply(lambda ocupation:get_best_contact_ocupation(data[data['ocupacion']==ocupation]))
 
-  print(customers)
+  #print(customers)
   return customers
 
 
-def get_best_contact_ocupation(ocupacion,df):
-    print(df)
-    return 0
+def get_best_contact_ocupation(data_ocupation):
+    data_ocupation = data_ocupation[data_ocupation['estatus_contacto'] == 'Valido  ']
+    #print(data_ocupation)
 
 
 def get_age_group(age):
