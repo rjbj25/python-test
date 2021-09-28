@@ -1,7 +1,7 @@
 from distutils.core import setup
-setup(name='Distutils',
+setup(name='python-test',
       version='1.0',
-      description='Python Distribution Utilities',
+      description='Python Test',
       author='Ramiro Balmaceda',
       author_email='info@rbalmaceda.com',
       url='www.rbalmaceda.com',
