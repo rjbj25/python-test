@@ -80,7 +80,7 @@ def customer_transform(data):
   ocupations['best_contact_ocupation_fiscal_id'] = ocupations['ocupacion'].apply(lambda ocupation:get_best_contact_ocupation(data[data['ocupacion']==ocupation]))
   customers['best_contact_ocupation'] = customers['fiscal_id'].apply(lambda fiscal_id:check_best_contact_ocupation(fiscal_id,ocupations))
   logger.info('Se finaliza el cálculo del best_contact_ocupation')
-  return customers.drop_duplicates()
+  return customers.drop_duplicates(subset=['fiscal_id'])
 
 
 def check_best_contact_ocupation(fiscal_id,ocupations):
@@ -137,9 +137,9 @@ def load(data):
                         row['ocupation'],
                         row['best_contact_ocupation'])
     session.add(customer)
-    try:
-      session.commit()
-    except exc.IntegrityError as e:
+  try:
+    session.commit()
+  except exc.IntegrityError as e:
       logger.error(e)
   
   
@@ -151,9 +151,9 @@ def load(data):
                         row['priority']
                         )
     session.add(email)
-    try:
-      session.commit()
-    except exc.IntegrityError as e:
+  try:
+    session.commit()
+  except exc.IntegrityError as e:
       logger.error(e)
   
 
@@ -164,9 +164,9 @@ def load(data):
                         row['priority']
                         )
     session.add(phone)
-    try:
-      session.commit()
-    except exc.IntegrityError as e:
+  try:
+    session.commit()
+  except exc.IntegrityError as e:
       logger.error(e)
   
   session.close()
