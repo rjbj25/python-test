@@ -123,8 +123,7 @@ def load(data):
   session = Session()
   
   for index, row in data['customers'].iterrows():
-    try:
-      customer = Customer(row['fiscal_id'],
+    customer = Customer(row['fiscal_id'],
                         row['first_name'],
                         row['last_name'],
                         row['gender'],
@@ -137,36 +136,39 @@ def load(data):
                         row['address'],
                         row['ocupation'],
                         row['best_contact_ocupation'])
-      session.add(customer)
+    session.add(customer)
+    try:
+      session.commit()
     except exc.IntegrityError as e:
       logger.error(e)
-  session.commit()
+  
   
 
   for index, row in data['emails'].iterrows():
-    try:
-      email = Email(row['fiscal_id'],
+    email = Email(row['fiscal_id'],
                         row['email'],
                         row['status'],
                         row['priority']
                         )
-      session.add(email)
+    session.add(email)
+    try:
+      session.commit()
     except exc.IntegrityError as e:
       logger.error(e)
-  session.commit()
+  
 
   for index, row in data['phone'].iterrows():
-    try:
-      phone = Phone(row['fiscal_id'],
+    phone = Phone(row['fiscal_id'],
                        row['email'],
                         row['status'],
                         row['priority']
                         )
-      session.add(phone)
+    session.add(phone)
+    try:
+      session.commit()
     except exc.IntegrityError as e:
       logger.error(e)
-  session.commit()
-
+  
   session.close()
 
 
