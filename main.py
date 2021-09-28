@@ -139,7 +139,7 @@ def load(data):
     session.add(customer)
   try:
     session.commit()
-  except exc.IntegrityError as e:
+  except Exception as e:
       logger.error(e)
   
   
@@ -153,20 +153,20 @@ def load(data):
     session.add(email)
   try:
     session.commit()
-  except exc.IntegrityError as e:
+  except Exception as e:
       logger.error(e)
   
 
-  for index, row in data['phone'].iterrows():
+  for index, row in data['phones'].iterrows():
     phone = Phone(row['fiscal_id'],
-                       row['email'],
+                       row['phone'],
                         row['status'],
                         row['priority']
                         )
     session.add(phone)
   try:
     session.commit()
-  except exc.IntegrityError as e:
+  except Exception as e:
       logger.error(e)
   
   session.close()

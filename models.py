@@ -13,7 +13,7 @@ Base = declarative_base()
 class Customer(Base):
     __tablename__ = 'customers'
 
-    fiscal_id = Column(String, primary_key=True)
+    fiscal_id = Column(String, primary_key=True, unique=False)
     first_name = Column(String)
     last_name = Column(String)
     gender = Column(String)
@@ -60,7 +60,7 @@ class Customer(Base):
 class Email(Base):
     __tablename__ = 'emails'
 
-    fiscal_id = Column(String, primary_key=True)
+    fiscal_id = Column(String, primary_key=True, unique=False)
     email = Column(String, primary_key=True)
     status = Column(String)
     priority = Column(Integer)
@@ -80,8 +80,8 @@ class Email(Base):
 class Phone(Base):
     __tablename__ = 'phones'
 
-    fiscal_id = Column(String, primary_key=True)
-    phone = Column(String, primary_key=True)
+    fiscal_id = Column(String, primary_key=True, unique=False)
+    phone = Column(String, primary_key=True, unique=False)
     status = Column(String)
     priority = Column(Integer)
 
