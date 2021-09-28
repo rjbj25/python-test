@@ -189,3 +189,4 @@ if __name__ == '__main__':
   logger.info('Se finalizan todas las transformaciones y se inicia el cargue a la base de datos.')
   load(transformed_data)
   logger.info('Se finaliza el cargue de la información a la base de datos')
+  
