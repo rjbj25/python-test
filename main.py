@@ -23,10 +23,17 @@ def extract(path,slicer,headers):
 
 
 def transform(data,strings):
+  '''Retorna un diccionario de Dataframes con los clientes, emails y telefonos transformados'''
   data = to_uppercase(data, strings)
+  logger.info('Se inician las trasnformaciones de los clientes')
   customers = customer_transform(data)
+  logger.info('Se finalizan las trasnformaciones de los clientes')
+  logger.info('Se inician las trasnformaciones de los emails')
   emails = emails_transform(data)
+  logger.info('Se finalizan las trasnformaciones de los emails')
+  logger.info('Se inician las trasnformaciones de los telefonos')
   phones = phones_transform(data)
+  logger.info('Se finalizan las trasnformaciones de los telefonos')
   logger.info('Se inicia exportación de reportes en excel')
   customers.to_excel('./output/customers.xlsx')
   emails.to_excel('./output/emails.xlsx')
@@ -41,6 +48,7 @@ def transform(data,strings):
     
 
 def emails_transform(data):
+  '''Retorna un Dataframe con los emails validos e invalidos en la data y con la estructura solicitada'''
   data = data[data['correo']!='                                                  ']
   emails = pd.DataFrame()
   emails['fiscal_id'] = data['rut'] + ' ' + data['dv']
@@ -51,6 +59,7 @@ def emails_transform(data):
 
 
 def phones_transform(data):
+  '''Retorna un Dataframe con los telefonos validos e invalidos en la data y con la estructura solicitada'''  
   data = data[data['telefono']!='         ']
   phones = pd.DataFrame()
   phones['fiscal_id'] = data['rut'] + ' ' + data['dv']
@@ -61,6 +70,7 @@ def phones_transform(data):
 
 
 def customer_transform(data):
+  '''Retorna un Dataframe con los telefonos validos e invalidos en la data y con la estructura solicitada'''  
   today = pd.to_datetime('today')
   customers = pd.DataFrame()
   customers['fiscal_id'] = data['rut'] + ' ' + data['dv']
@@ -68,18 +78,16 @@ def customer_transform(data):
   customers['last_name'] = data['apellido']
   customers['gender'] = data['genero']
   customers['birth_date'] = pd.to_datetime(data['fecha_nacimiento'], errors='coerce')
-  customers['age'] = today.year - customers['birth_date'].dt.year
-  customers['age_group'] = customers['age'].apply(lambda age: get_age_group(age))
+  customers['age'] = today.year - customers['birth_date'].dt.year.astype('int16')
+  customers['age_group'] = customers['age'].apply(lambda age: get_age_group(age)).astype('int8')
   customers['due_date'] = pd.to_datetime(data['fecha_vencimiento'], errors='coerce')
-  customers['delinquency'] = (today - customers['due_date']).dt.days
-  customers['due_balance'] = data['deuda']
+  customers['delinquency'] = (today - customers['due_date']).dt.days.astype('int16')
+  customers['due_balance'] = data['deuda'].astype('int32')
   customers['address'] = data['direccion']
   customers['ocupation'] = data['ocupacion']
-  logger.info('Se inicia el cálculo del best_contact_ocupation')
   ocupations = pd.DataFrame(data['ocupacion'].drop_duplicates()).reset_index().drop('index', axis=1)
   ocupations['best_contact_ocupation_fiscal_id'] = ocupations['ocupacion'].apply(lambda ocupation:get_best_contact_ocupation(data[data['ocupacion']==ocupation]))
-  customers['best_contact_ocupation'] = customers['fiscal_id'].apply(lambda fiscal_id:check_best_contact_ocupation(fiscal_id,ocupations))
-  logger.info('Se finaliza el cálculo del best_contact_ocupation')
+  customers['best_contact_ocupation'] = customers['fiscal_id'].apply(lambda fiscal_id:check_best_contact_ocupation(fiscal_id,ocupations)).astype('int8')
   return customers.drop_duplicates(subset=['fiscal_id'])
 
 
@@ -139,11 +147,9 @@ def load(data):
     session.add(customer)
   try:
     session.commit()
-  except exc.IntegrityError as e:
-      logger.error(e)
+  except Exception as e:
+    logger.error(e)
   
-  
-
   for index, row in data['emails'].iterrows():
     email = Email(row['fiscal_id'],
                         row['email'],
@@ -153,21 +159,20 @@ def load(data):
     session.add(email)
   try:
     session.commit()
-  except exc.IntegrityError as e:
-      logger.error(e)
+  except Exception as e:
+    logger.error(e)
   
-
-  for index, row in data['phone'].iterrows():
+  for index, row in data['phones'].iterrows():
     phone = Phone(row['fiscal_id'],
-                       row['email'],
-                        row['status'],
-                        row['priority']
-                        )
+                    row['phone'],
+                    row['status'],
+                    row['priority']
+                    )
     session.add(phone)
   try:
     session.commit()
-  except exc.IntegrityError as e:
-      logger.error(e)
+  except Exception as e:
+    logger.error(e)
   
   session.close()
 
