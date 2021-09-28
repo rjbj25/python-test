@@ -140,25 +140,31 @@ def load(data):
       session.add(customer)
     except exc.IntegrityError as e:
       logger.error(e)
-    session.commit()
+  session.commit()
   
 
   for index, row in data['emails'].iterrows():
-    email = Email(row['fiscal_id'],
+    try:
+      email = Email(row['fiscal_id'],
                         row['email'],
                         row['status'],
                         row['priority']
                         )
-    session.add(email)
+      session.add(email)
+    except exc.IntegrityError as e:
+      logger.error(e)
   session.commit()
 
   for index, row in data['phone'].iterrows():
-    phone = Phone(row['fiscal_id'],
-                        row['email'],
+    try:
+      phone = Phone(row['fiscal_id'],
+                       row['email'],
                         row['status'],
                         row['priority']
                         )
-    session.add(phone)
+      session.add(phone)
+    except exc.IntegrityError as e:
+      logger.error(e)
   session.commit()
 
   session.close()
