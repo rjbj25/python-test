@@ -3,3 +3,7 @@ customers.txt
 __pycache__
 database.db3
 database.db3-journal
+output/customers.xlsx
+output/emails.xlsx
+output/phones.xlsx
+output/~$customers.xlsx
