@@ -1,1 +1,5 @@
 customers.txt
+.DS_Store
+__pycache__
+database.db3
+database.db3-journal

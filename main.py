@@ -1,13 +1,8 @@
 import logging
-import sys
 logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d,%H:%M:%S', format='%(asctime)s.%(msecs)03d %(levelname)s {%(module)s} [%(funcName)s] %(message)s',)
-import datetime
 import pandas as pd
-from entities.base import Base, engine, Session
-from entities.customers import Customer
-from entities.emails import Email
-from entities.phones import Phone
-
+from models import Base, engine, Session, Customer, Email, Phone
+from sqlalchemy import exc
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +27,11 @@ def transform(data,strings):
   customers = customer_transform(data)
   emails = emails_transform(data)
   phones = phones_transform(data)
-  logger.info('Se inicia exportacion de reportes en excel')
+  logger.info('Se inicia exportación de reportes en excel')
   customers.to_excel('./output/customers.xlsx')
   emails.to_excel('./output/emails.xlsx')
   phones.to_excel('./output/phones.xlsx')
-  logger.info('Se finaliza exportacion de reportes en excel')
+  logger.info('Se finaliza exportación de reportes en excel')
   customers_transform = {
     'customers': customers,
     'emails': emails,
@@ -80,17 +75,17 @@ def customer_transform(data):
   customers['due_balance'] = data['deuda']
   customers['address'] = data['direccion']
   customers['ocupation'] = data['ocupacion']
-  logger.info('Se inicia el calculo del best_contact_ocupation')
+  logger.info('Se inicia el cálculo del best_contact_ocupation')
   ocupations = pd.DataFrame(data['ocupacion'].drop_duplicates()).reset_index().drop('index', axis=1)
   ocupations['best_contact_ocupation_fiscal_id'] = ocupations['ocupacion'].apply(lambda ocupation:get_best_contact_ocupation(data[data['ocupacion']==ocupation]))
   customers['best_contact_ocupation'] = customers['fiscal_id'].apply(lambda fiscal_id:check_best_contact_ocupation(fiscal_id,ocupations))
-  logger.info('Se finaliza el calculo del best_contact_ocupation')
+  logger.info('Se finaliza el cálculo del best_contact_ocupation')
   return customers.drop_duplicates()
 
 
 def check_best_contact_ocupation(fiscal_id,ocupations):
-  bofid = ocupations[ocupations['best_contact_ocupation_fiscal_id']==fiscal_id]
-  return 0 if bofid.empty else 1
+  bco = ocupations[ocupations['best_contact_ocupation_fiscal_id']==fiscal_id]
+  return 0 if bco.empty else 1
 
 
 def get_best_contact_ocupation(data_ocupation):
@@ -126,8 +121,10 @@ def to_uppercase(data, strings):
 def load(data):
   Base.metadata.create_all(engine)
   session = Session()
+  
   for index, row in data['customers'].iterrows():
-    customer = Customer(row['fiscal_id'],
+    try:
+      customer = Customer(row['fiscal_id'],
                         row['first_name'],
                         row['last_name'],
                         row['gender'],
@@ -140,8 +137,11 @@ def load(data):
                         row['address'],
                         row['ocupation'],
                         row['best_contact_ocupation'])
-    session.add(customer)
-  session.commit()
+      session.add(customer)
+    except exc.IntegrityError as e:
+      logger.error(e)
+    session.commit()
+  
 
   for index, row in data['emails'].iterrows():
     email = Email(row['fiscal_id'],
@@ -162,6 +162,7 @@ def load(data):
   session.commit()
 
   session.close()
+
 
 if __name__ == '__main__':
   slicer = [0,7,8,28,53,62,72,82,88,138,168,172,174,224,232,241,242]

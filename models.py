@@ -1,8 +1,14 @@
 from sqlalchemy import Column, String, Integer, Date, Boolean
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent))
-from base import Base
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR))
+engine = create_engine(f'sqlite:///database.db3')
+Session = sessionmaker(bind=engine)
+Base = declarative_base()
 
 class Customer(Base):
     __tablename__ = 'customers'
@@ -49,3 +55,43 @@ class Customer(Base):
         self.address = address
         self.ocupation = ocupation
         self.best_contact_ocupation = best_contact_ocupation
+
+
+class Email(Base):
+    __tablename__ = 'emails'
+
+    fiscal_id = Column(String, primary_key=True)
+    email = Column(String, primary_key=True)
+    status = Column(String)
+    priority = Column(Integer)
+
+    def __init__(self,
+                fiscal_id,
+                email,
+                status,
+                priority
+                ):
+        self.fiscal_id = fiscal_id
+        self.email = email
+        self.status = status
+        self.priority = priority
+
+
+class Phone(Base):
+    __tablename__ = 'phones'
+
+    fiscal_id = Column(String, primary_key=True)
+    phone = Column(String, primary_key=True)
+    status = Column(String)
+    priority = Column(Integer)
+
+    def __init__(self,
+                fiscal_id,
+                phone,
+                status,
+                priority
+                ):
+        self.fiscal_id = fiscal_id
+        self.phone = phone
+        self.status = status
+        self.priority = priority
