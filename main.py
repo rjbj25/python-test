@@ -1,7 +1,13 @@
 import logging
+import sys
 logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d,%H:%M:%S', format='%(asctime)s.%(msecs)03d %(levelname)s {%(module)s} [%(funcName)s] %(message)s',)
 import datetime
 import pandas as pd
+from entities.base import Base, engine, Session
+from entities.customers import Customer
+from entities.emails import Email
+from entities.phones import Phone
+
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +16,7 @@ def extract(path,slicer,headers):
   '''Retorna un Dataframe con la información de los clientes
     Recibe la ruta del archivo (path) la indendación del mismo (slicer) y los encabezados (headers)'''
   try:
-    df = pd.read_csv(path, delimiter='\t',header=None)
+    df = pd.read_csv(path, delimiter='\t',header=None, dtype='string')
     for i in range(len(slicer)-1):
       df.insert(value=df[0].str[slicer[i]:slicer[i+1]], loc=i+1,column=i+1)
     customers = df.drop(axis=1, columns=0)
@@ -22,15 +28,45 @@ def extract(path,slicer,headers):
 
 
 def transform(data,strings):
-  logger.info('Se inicia la conversion de strings en Mayuscula')
   data = to_uppercase(data, strings)
-  logger.info('Se finaliza la conversion de strings en Mayuscula')
   customers = customer_transform(data)
+  emails = emails_transform(data)
+  phones = phones_transform(data)
+  logger.info('Se inicia exportacion de reportes en excel')
+  customers.to_excel('./output/customers.xlsx')
+  emails.to_excel('./output/emails.xlsx')
+  phones.to_excel('./output/phones.xlsx')
+  logger.info('Se finaliza exportacion de reportes en excel')
+  customers_transform = {
+    'customers': customers,
+    'emails': emails,
+    'phones': phones
+  }
+  return customers_transform
     
+
+def emails_transform(data):
+  data = data[data['correo']!='                                                  ']
+  emails = pd.DataFrame()
+  emails['fiscal_id'] = data['rut'] + ' ' + data['dv']
+  emails['email'] = data['correo']
+  emails['status'] = data['estatus_contacto']
+  emails['priority'] = data['prioridad']
+  return emails.reset_index()
+
+
+def phones_transform(data):
+  data = data[data['telefono']!='         ']
+  phones = pd.DataFrame()
+  phones['fiscal_id'] = data['rut'] + ' ' + data['dv']
+  phones['phone'] = data['telefono']
+  phones['status'] = data['estatus_contacto']
+  phones['priority'] = data['prioridad']
+  return phones.reset_index()
+
 
 def customer_transform(data):
   today = pd.to_datetime('today')
-
   customers = pd.DataFrame()
   customers['fiscal_id'] = data['rut'] + ' ' + data['dv']
   customers['first_name'] = data['nombre']
@@ -44,18 +80,26 @@ def customer_transform(data):
   customers['due_balance'] = data['deuda']
   customers['address'] = data['direccion']
   customers['ocupation'] = data['ocupacion']
+  logger.info('Se inicia el calculo del best_contact_ocupation')
   ocupations = pd.DataFrame(data['ocupacion'].drop_duplicates()).reset_index().drop('index', axis=1)
-  print(ocupations['ocupacion'])
-  print(data['ocupacion'])
   ocupations['best_contact_ocupation_fiscal_id'] = ocupations['ocupacion'].apply(lambda ocupation:get_best_contact_ocupation(data[data['ocupacion']==ocupation]))
+  customers['best_contact_ocupation'] = customers['fiscal_id'].apply(lambda fiscal_id:check_best_contact_ocupation(fiscal_id,ocupations))
+  logger.info('Se finaliza el calculo del best_contact_ocupation')
+  return customers.drop_duplicates()
 
-  #print(customers)
-  return customers
+
+def check_best_contact_ocupation(fiscal_id,ocupations):
+  bofid = ocupations[ocupations['best_contact_ocupation_fiscal_id']==fiscal_id]
+  return 0 if bofid.empty else 1
 
 
 def get_best_contact_ocupation(data_ocupation):
-    data_ocupation = data_ocupation[data_ocupation['estatus_contacto'] == 'Valido  ']
-    #print(data_ocupation)
+  data_ocupation = data_ocupation[data_ocupation['estatus_contacto'] == 'VALIDO  ']
+  data_ocupation = data_ocupation[data_ocupation['telefono'] != '         ']
+  data_ocupation['fiscal_id'] = data_ocupation['rut'] + ' ' + data_ocupation['dv']
+  best_contact_counter = data_ocupation.groupby('fiscal_id')['telefono'].count().reset_index()
+  best_contact_counter = best_contact_counter.sort_values(by=['telefono'], ascending=False)
+  return best_contact_counter['fiscal_id'].iloc[0]
 
 
 def get_age_group(age):
@@ -79,6 +123,46 @@ def to_uppercase(data, strings):
   return data
 
 
+def load(data):
+  Base.metadata.create_all(engine)
+  session = Session()
+  for index, row in data['customers'].iterrows():
+    customer = Customer(row['fiscal_id'],
+                        row['first_name'],
+                        row['last_name'],
+                        row['gender'],
+                        row['birth_date'],
+                        row['age'],
+                        row['age_group'],
+                        row['due_date'],
+                        row['delinquency'],
+                        row['due_balance'],
+                        row['address'],
+                        row['ocupation'],
+                        row['best_contact_ocupation'])
+    session.add(customer)
+  session.commit()
+
+  for index, row in data['emails'].iterrows():
+    email = Email(row['fiscal_id'],
+                        row['email'],
+                        row['status'],
+                        row['priority']
+                        )
+    session.add(email)
+  session.commit()
+
+  for index, row in data['phone'].iterrows():
+    phone = Phone(row['fiscal_id'],
+                        row['email'],
+                        row['status'],
+                        row['priority']
+                        )
+    session.add(phone)
+  session.commit()
+
+  session.close()
+
 if __name__ == '__main__':
   slicer = [0,7,8,28,53,62,72,82,88,138,168,172,174,224,232,241,242]
   headers = ['rut','dv','nombre','apellido','genero','fecha_nacimiento','fecha_vencimiento','deuda','direccion','ocupacion','altura','peso','correo','estatus_contacto','telefono','prioridad']
@@ -87,4 +171,7 @@ if __name__ == '__main__':
   logger.info('Iniciando extracción de la data de archivo')
   data = extract(path,slicer,headers)
   logger.info('Se finaliza la extracción de la data del archivo y se inician las transformaciones')
-  customers = transform(data, strings)
+  transformed_data = transform(data, strings)
+  logger.info('Se finalizan todas las transformaciones y se inicia el cargue a la base de datos.')
+  load(transformed_data)
+  logger.info('Se finaliza el cargue de la información a la base de datos')

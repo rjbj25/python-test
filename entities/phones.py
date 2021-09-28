@@ -1,7 +1,10 @@
 from sqlalchemy import Column, String, Integer
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent))
 from base import Base
 
-class Email(Base):
+class Phone(Base):
     __tablename__ = 'phones'
 
     fiscal_id = Column(String, primary_key=True)

@@ -1,4 +1,7 @@
 from sqlalchemy import Column, String, Integer, Date, Boolean
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent))
 from base import Base
 
 class Customer(Base):
