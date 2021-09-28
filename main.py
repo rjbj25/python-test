@@ -54,7 +54,7 @@ def emails_transform(data):
   emails['fiscal_id'] = data['rut'] + ' ' + data['dv']
   emails['email'] = data['correo']
   emails['status'] = data['estatus_contacto']
-  emails['priority'] = data['prioridad']
+  emails['priority'] = data['prioridad'].astype('int8')
   return emails.reset_index()
 
 
@@ -63,14 +63,14 @@ def phones_transform(data):
   data = data[data['telefono']!='         ']
   phones = pd.DataFrame()
   phones['fiscal_id'] = data['rut'] + ' ' + data['dv']
-  phones['phone'] = data['telefono']
+  phones['phone'] = data['telefono'].astype('int32')
   phones['status'] = data['estatus_contacto']
-  phones['priority'] = data['prioridad']
+  phones['priority'] = data['prioridad'].astype('int8')
   return phones.reset_index()
 
 
 def customer_transform(data):
-  '''Retorna un Dataframe con los telefonos validos e invalidos en la data y con la estructura solicitada'''  
+  '''Retorna un Dataframe con los clientes en la data y con la estructura solicitada'''  
   today = pd.to_datetime('today')
   customers = pd.DataFrame()
   customers['fiscal_id'] = data['rut'] + ' ' + data['dv']
@@ -189,4 +189,3 @@ if __name__ == '__main__':
   logger.info('Se finalizan todas las transformaciones y se inicia el cargue a la base de datos.')
   load(transformed_data)
   logger.info('Se finaliza el cargue de la información a la base de datos')
-  
