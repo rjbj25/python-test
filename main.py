@@ -51,9 +51,9 @@ def emails_transform(data):
   '''Retorna un Dataframe con los emails validos e invalidos en la data y con la estructura solicitada'''
   data = data[data['correo']!='                                                  ']
   emails = pd.DataFrame()
-  emails['fiscal_id'] = data['rut'] + ' ' + data['dv']
-  emails['email'] = data['correo']
-  emails['status'] = data['estatus_contacto']
+  emails['fiscal_id'] = data['rut'] + data['dv']
+  emails['email'] = data['correo'].apply(lambda correo:correo.strip())
+  emails['status'] = data['estatus_contacto'].apply(lambda status:status.strip())
   emails['priority'] = data['prioridad'].astype('int8')
   return emails.reset_index()
 
@@ -62,9 +62,9 @@ def phones_transform(data):
   '''Retorna un Dataframe con los telefonos validos e invalidos en la data y con la estructura solicitada'''  
   data = data[data['telefono']!='         ']
   phones = pd.DataFrame()
-  phones['fiscal_id'] = data['rut'] + ' ' + data['dv']
-  phones['phone'] = data['telefono'].astype('int32')
-  phones['status'] = data['estatus_contacto']
+  phones['fiscal_id'] = data['rut'] + data['dv']
+  phones['phone'] = data['telefono'].apply(lambda string:string.strip())
+  phones['status'] = data['estatus_contacto'].apply(lambda status:status.strip())
   phones['priority'] = data['prioridad'].astype('int8')
   return phones.reset_index()
 
@@ -73,22 +73,22 @@ def customer_transform(data):
   '''Retorna un Dataframe con los clientes en la data y con la estructura solicitada'''  
   today = pd.to_datetime('today')
   customers = pd.DataFrame()
-  customers['fiscal_id'] = data['rut'] + ' ' + data['dv']
-  customers['first_name'] = data['nombre']
-  customers['last_name'] = data['apellido']
-  customers['gender'] = data['genero']
+  customers['fiscal_id'] = data['rut'] + data['dv']
+  customers['first_name'] = data['nombre'].apply(lambda string:string.strip())
+  customers['last_name'] = data['apellido'].apply(lambda string:string.strip())
+  customers['gender'] = data['genero'].apply(lambda string:string.strip())
   customers['birth_date'] = pd.to_datetime(data['fecha_nacimiento'], errors='coerce')
   customers['age'] = today.year - customers['birth_date'].dt.year.astype('int16')
   customers['age_group'] = customers['age'].apply(lambda age: get_age_group(age)).astype('int8')
   customers['due_date'] = pd.to_datetime(data['fecha_vencimiento'], errors='coerce')
   customers['delinquency'] = (today - customers['due_date']).dt.days.astype('int16')
   customers['due_balance'] = data['deuda'].astype('int32')
-  customers['address'] = data['direccion']
-  customers['ocupation'] = data['ocupacion']
+  customers['address'] = data['direccion'].apply(lambda string:string.strip())
+  customers['ocupation'] = data['ocupacion'].apply(lambda string:string.strip())
   ocupations = pd.DataFrame(data['ocupacion'].drop_duplicates()).reset_index().drop('index', axis=1)
   ocupations['best_contact_ocupation_fiscal_id'] = ocupations['ocupacion'].apply(lambda ocupation:get_best_contact_ocupation(data[data['ocupacion']==ocupation]))
   customers['best_contact_ocupation'] = customers['fiscal_id'].apply(lambda fiscal_id:check_best_contact_ocupation(fiscal_id,ocupations)).astype('int8')
-  return customers.drop_duplicates(subset=['fiscal_id'])
+  return customers.drop_duplicates(subset=['fiscal_id']).reset_index()
 
 
 def check_best_contact_ocupation(fiscal_id,ocupations):
@@ -99,7 +99,7 @@ def check_best_contact_ocupation(fiscal_id,ocupations):
 def get_best_contact_ocupation(data_ocupation):
   data_ocupation = data_ocupation[data_ocupation['estatus_contacto'] == 'VALIDO  ']
   data_ocupation = data_ocupation[data_ocupation['telefono'] != '         ']
-  data_ocupation['fiscal_id'] = data_ocupation['rut'] + ' ' + data_ocupation['dv']
+  data_ocupation['fiscal_id'] = data_ocupation['rut'] + data_ocupation['dv']
   best_contact_counter = data_ocupation.groupby('fiscal_id')['telefono'].count().reset_index()
   best_contact_counter = best_contact_counter.sort_values(by=['telefono'], ascending=False)
   return best_contact_counter['fiscal_id'].iloc[0]
