@@ -35,9 +35,9 @@ def transform(data,strings):
   phones = phones_transform(data)
   logger.info('Se finalizan las trasnformaciones de los telefonos')
   logger.info('Se inicia exportación de reportes en excel')
-  customers.to_excel('./output/customers.xlsx')
-  emails.to_excel('./output/emails.xlsx')
-  phones.to_excel('./output/phones.xlsx')
+  customers.to_excel('./output/customers.xlsx', index = False)
+  emails.to_excel('./output/emails.xlsx', index = False)
+  phones.to_excel('./output/phones.xlsx', index = False)
   logger.info('Se finaliza exportación de reportes en excel')
   customers_transform = {
     'customers': customers,
@@ -88,7 +88,7 @@ def customer_transform(data):
   ocupations = pd.DataFrame(data['ocupacion'].drop_duplicates()).reset_index().drop('index', axis=1)
   ocupations['best_contact_ocupation_fiscal_id'] = ocupations['ocupacion'].apply(lambda ocupation:get_best_contact_ocupation(data[data['ocupacion']==ocupation]))
   customers['best_contact_ocupation'] = customers['fiscal_id'].apply(lambda fiscal_id:check_best_contact_ocupation(fiscal_id,ocupations)).astype('int8')
-  return customers.drop_duplicates(subset=['fiscal_id']).reset_index()
+  return customers.drop_duplicates(subset=['fiscal_id']).reset_index().drop(['index'],axis=1)
 
 
 def check_best_contact_ocupation(fiscal_id,ocupations):
